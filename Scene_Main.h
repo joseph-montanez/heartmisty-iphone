@@ -1,40 +1,33 @@
 int TouchedTile(int id, int event, int x, int y) {
+	//-- Add a touch point to the touches vector
 	std::vector<int> point;
 	point.push_back(x);
 	point.push_back(y);
 	touches.push_back(point);
-	printf("x: %d ", x);
-	printf("y: %d\n", y);
 
-	//-- Test for possible swipping?
+	//-- Scroll modifiers
+	int scrolling_x = 0;
+	int scrolling_y = 0;
+
+	//-- Test for possible panning
 	if (touches.size() > 15) {
-		//-- 15 touch points is 1/2 of a second.
 		int diff;
 		std::vector<int> p1, p2;
+
+		//-- Get the first and last touch points
 		p1 = touches[0];
 		p2 = touches[touches.size() - 1];
+
 		//-- See if the first and last touch points are small enough to consider scrolling. 
 		if (p1[1] - p2[1] < 15) {
-			printf("scroll!\n");
-			global_x += (p1[0] - p2[0]) / 20;
-			if (global_x < 0) {
-				global_x = 0;
-			}
-			else if (global_x > 32 * 50) {
-				global_x = 32 * 50;
-			}
-			printf("Global X: %d\n", global_x);
-			WorldSetxy(global_x, 0);
+			scrolling_x = (p1[0] - p2[0]) / 20;
 			global_scrolling = true;
 		}
+
+		//-- Might not be best to clear so I can test for other jesters?
+		//-- I.E swips are fast and may need more touch points, will
+		//-- panning will require less touch points.
 		touches.clear();
-		/*
-		for (unsigned int i = 0; i < touches.size(); i++) {
-			point = touches[i];
-			printf("x: %d ", point[0]);
-			printf("y: %d\n", point[1]);
-		}
-		*/
 	}
 	else if (global_scrolling == true && touches.size() > 1) {
 		int diff;
@@ -42,21 +35,30 @@ int TouchedTile(int id, int event, int x, int y) {
 		p1 = touches[0];
 		p2 = touches[touches.size() - 1];
 
-		printf("scroll!\n");
-		global_x += (p1[0] - p2[0]) * 2;
+		scrolling_x += (p1[0] - p2[0]) * 2;
 		if (global_x < 0) {
 			global_x = 0;
 		}
 		else if (global_x > 32 * 50) {
 			global_x = 32 * 50;
 		}
-		printf("Global X: %d\n", global_x);
 		WorldSetxy(global_x, 0);
-		global_scrolling = 1;
-		
 		touches.clear();
-
 	}
+
+	if (global_scrolling == true && scrolling_x > 0) {
+		global_x += scrolling_x;
+
+		//-- Make sure to never go beyound a possible touch points
+		if (global_x < 0) {
+			global_x = 0;
+		}
+		else if (global_x > 32 * 50) {
+			global_x = 32 * 50;
+		}
+		WorldSetxy(global_x, 0);
+	}
+
 	if (event == 3) {
 		printf("%d touches\n", touches.size());
 		printf("%d Touched on %d x %d\n", id, x, y);
@@ -69,11 +71,6 @@ int TouchedTile(int id, int event, int x, int y) {
 
 int LoadGameScene() {
 	Mp3Stop();
-	/*
-	LogoImage=ImageAdd("Images/button1.png");
-	images.push_back(LogoImage);
-	sviews["Button"] = Shabb::View::createFromImage(LogoImage, 90, 50);
-	*/
 	
 	int grass = ImageAdd("Images/grass.png");
 	images.push_back(grass);
